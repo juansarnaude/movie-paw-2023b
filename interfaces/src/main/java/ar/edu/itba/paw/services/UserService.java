@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.services;
 
 
+import ar.edu.itba.paw.exceptions.UnableToFindUserException;
 import ar.edu.itba.paw.models.User.Profile;
 import ar.edu.itba.paw.models.User.Token;
 import ar.edu.itba.paw.models.User.User;
@@ -10,18 +11,25 @@ import java.util.List;
 
 public interface UserService {
 
+    //API
+    List<User> listAll(int page);
+
     //Registration actions
     String createUser(String username, String email, String password);
+
     User createUserFromUnregistered(String username, String email, String password);
+
     boolean confirmRegister(Token token);
 
     //User finders
     User findUserById(int userId);
+
     User findUserByEmail(String mail);
-    User findUserByUsername(String username);
+
+    User findUserByUsername(String username) throws UnableToFindUserException;
 
     //Search user (recomeneded only for the searchbar)
-    List<Profile> searchUsers(String username,  String orderBy, String sortOrder,  int size, int pageNumber);
+    List<Profile> searchUsers(String username, String orderBy, String sortOrder, int size, int pageNumber);
 
     //Search user count for pagination in searchUsers cases
     int getSearchCount(String username);
@@ -40,12 +48,15 @@ public interface UserService {
 
     //Auth info of users
     User getInfoOfMyUser();
+
     //Returns -1 if not authenticated
     int tryToGetCurrentUserId();
+
     boolean isUsernameMe(String username);
 
     //Profile picture functions
-    void setProfilePicture(MultipartFile image);
+    void setProfilePicture(byte[] imageBytes, String extension);
+
     byte[] getProfilePicture(String username);
 
     //Verification mail methods

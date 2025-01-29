@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Media.Media;
 import ar.edu.itba.paw.models.MoovieList.MoovieList;
 import ar.edu.itba.paw.models.MoovieList.MoovieListCard;
 import ar.edu.itba.paw.models.MoovieList.MoovieListDetails;
+import ar.edu.itba.paw.models.MoovieList.UserMoovieListId;
 
 import java.util.List;
 
@@ -21,10 +22,12 @@ public interface MoovieListService {
     MoovieListCard getMoovieListCardById(int moovieListId);
 
     //Bro, just read the function name!
-    List<MoovieListCard> getLikedMoovieListCards(int userId, int type, int size, int pageNumber);
+    List<MoovieListCard> getLikedMoovieListCards(String userId, int type, int size, int pageNumber);
+    UserMoovieListId currentUserHasLiked( int moovieListId);
 
     //Returns the followed MoovieListsCards
     List<MoovieListCard> getFollowedMoovieListCards(int userId, int type, int size, int pageNumber);
+    UserMoovieListId currentUserHasFollowed( int moovieListId);
 
     int getFollowedMoovieListCardsCount(int userId, int type);
 
@@ -38,7 +41,7 @@ public interface MoovieListService {
 
     //Get the MoovieListCard, which contains the element presented in searchs, has a lot of arguments for searchs/querys
     List<MoovieListCard> getMoovieListCards(String search, String ownerUsername , int type , String orderBy, String order, int size, int pageNumber);
-    int getMoovieListCardsCount(String search, String ownerUsername , int type , int size, int pageNumber);
+    int getMoovieListCardsCount(String search, String ownerUsername , int type);
 
 
     //Get the content of media of some moovieList by its id
@@ -55,15 +58,23 @@ public interface MoovieListService {
     MoovieList insertMediaIntoMoovieList(int moovieListid, List<Integer> mediaIdList);
     void deleteMediaFromMoovieList(int moovieListId, int mediaId);
     void deleteMoovieList(int moovieListId);
+    void editMoovieList(int moovieListId, String name, String description);
+    boolean isMediaInMoovieList(int mediaId, int moovieListId);
+
 
     //Receives three arrays of mediaid, one taht will got o next page, previous page and current page in order
     void updateMoovieListOrder(int moovieListId, int currentPageNumber, int[] toPrevPage, int[] currentPage, int[] toNextPage);
 
     //Likes functions
-    void likeMoovieList( int moovieListId);
+    boolean likeMoovieList(int moovieListId);
     void removeLikeMoovieList(int moovieListId);
 
-    void followMoovieList( int moovieListId);
+    boolean followMoovieList(int moovieListId);
     void removeFollowMoovieList(int moovieListId);
+
+    void addMediaToWatchlist(int movieId, String username);
+    void removeMediaFromWatchlist(int movieId, String username);
+    void addMediaToWatched(int movieId, String username);
+    void removeMediaFromWatched(int movieId, String username);
 
 }

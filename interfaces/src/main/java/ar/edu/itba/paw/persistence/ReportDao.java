@@ -15,41 +15,56 @@ public interface ReportDao {
     // STATS
 
     int getTotalReports();
+
     int getTypeReports(int type);
 
     // (Media) Reviews
 
     List<ReviewReport> getReviewReports();
+
     List<Review> getReportedReviews();
 
     int getReportedReviewsCount();
-    void reportReview(int reviewId, int userId, int type, String content);
-    void resolveReviewReport(int reportId);
+
+    ReviewReport reportReview(int reviewId, int userId, int type, String content);
+
+    void resolveReviewReport(int reviewId);
 
     // MoovieListReviews
 
     List<MoovieListReviewReport> getMoovieListReviewReports();
+
     List<MoovieListReview> getReportedMoovieListReviews();
+
     int getReportedMoovieListReviewsCount();
-    void reportMoovieListReview(int moovieListReviewId, int userId, int type, String content);
-    void resolveMoovieListReviewReport(int reportId);
+
+    MoovieListReviewReport reportMoovieListReview(int moovieListReviewId, int userId, int type, String content);
+
+    void resolveMoovieListReviewReport(int mlrId);
 
     // MoovieLists
 
     List<MoovieListReport> getMoovieListReports();
+
     List<MoovieList> getReportedMoovieLists();
+
     int getReportedMoovieListsCount();
-    void reportMoovieList(int moovieListId, int userId, int type, String content);
-    void resolveMoovieListReport(int reportId);
+
+    MoovieListReport reportMoovieList(int moovieListId, int userId, int type, String content);
+
+    void resolveMoovieListReport(int mlId);
 
     // (Review) Comments
 
     List<CommentReport> getCommentReports();
-    List<Comment> getReportedComments();
-    int getReportedCommentsCount();
-    void reportComment(int commentId, int userId, int type, String content);
 
-    void resolveCommentReport(int reportId);
+    List<Comment> getReportedComments();
+
+    int getReportedCommentsCount();
+
+    CommentReport reportComment(int commentId, int userId, int type, String content);
+
+    void resolveCommentReport(int commentId);
 
 
 }

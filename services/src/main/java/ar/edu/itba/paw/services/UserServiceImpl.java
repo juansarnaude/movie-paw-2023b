@@ -12,20 +12,19 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -48,37 +47,43 @@ public class UserServiceImpl implements UserService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 
+    final static int MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
     //REGSITRATION
 
 
+    @Override
+    public List<User> listAll(int page) {
+        return userDao.listAll(page);
+    }
+
     @Transactional
     @Override
-    public String createUser(String username, String email, String password){
-        if(userDao.findUserByUsername(username).isPresent()){
+    public String createUser(String username, String email, String password) {
+        if (userDao.findUserByUsername(username).isPresent()) {
             LOGGER.info("Failed to created user with username: {}", username);
             throw new UnableToCreateUserException("username_taken");
         }
         Optional<User> aux = userDao.findUserByEmail(email);
 
-        if(aux.isPresent()){
-            if(aux.get().getRole() == UserRoles.UNREGISTERED.getRole()){
+        if (aux.isPresent()) {
+            if (aux.get().getRole() == UserRoles.UNREGISTERED.getRole()) {
                 User user = createUserFromUnregistered(username, email, password);
                 String token = verificationTokenService.createVerificationToken(user.getUserId());
-                emailService.sendVerificationEmail(user,token,LocaleContextHolder.getLocale());
+                emailService.sendVerificationEmail(user, token, LocaleContextHolder.getLocale());
                 LOGGER.info("Succesfuly created user with username: {}", username);
                 return token;
-            } else{
+            } else {
                 throw new UnableToCreateUserException("email_taken");
             }
         }
-        try{
+        try {
             User user = userDao.createUser(username, email, passwordEncoder.encode(password));
             LOGGER.info("Succesfuly created user with username: {}", username);
             String token = verificationTokenService.createVerificationToken(user.getUserId());
-            emailService.sendVerificationEmail(user,token,LocaleContextHolder.getLocale());
+            emailService.sendVerificationEmail(user, token, LocaleContextHolder.getLocale());
             return token;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new UnableToCreateUserException("Unable to create user");
         }
     }
@@ -86,9 +91,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public User createUserFromUnregistered(String username, String email, String password) {
-        try{
+        try {
             return userDao.createUserFromUnregistered(username, email, passwordEncoder.encode(password));
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new UnableToCreateUserException("Unable to create user");
         }
 
@@ -98,27 +103,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean confirmRegister(Token token) {
         boolean isValidToken = verificationTokenService.isValidToken(token);
-        if(isValidToken) {
+        if (isValidToken) {
             int userId = token.getUserId();
             int role = findUserById(userId).getRole();
 
-            if(role == UserRoles.UNREGISTERED.getRole() || role == UserRoles.NOT_AUTHENTICATED.getRole()){
+            if (role == UserRoles.UNREGISTERED.getRole() || role == UserRoles.NOT_AUTHENTICATED.getRole()) {
                 userDao.confirmRegister(token.getUserId(), UserRoles.USER.getRole());
-            } else if(role == UserRoles.MODERATOR_NOT_REGISTERED.getRole()){
+            } else if (role == UserRoles.MODERATOR_NOT_REGISTERED.getRole()) {
                 userDao.confirmRegister(token.getUserId(), UserRoles.MODERATOR.getRole());
-            } else if(role == UserRoles.BANNED_NOT_REGISTERED.getRole()){
+            } else if (role == UserRoles.BANNED_NOT_REGISTERED.getRole()) {
                 userDao.confirmRegister(token.getUserId(), UserRoles.BANNED.getRole());
             }
 
             verificationTokenService.deleteToken(token);
         }
-        moovieListDao.createMoovieList(token.getUserId(), "Watched" , MoovieListTypes.MOOVIE_LIST_TYPE_DEFAULT_PRIVATE.getType() , "" );
-        moovieListDao.createMoovieList(token.getUserId(), "Watchlist", MoovieListTypes.MOOVIE_LIST_TYPE_DEFAULT_PRIVATE.getType(),  "" );
+        moovieListDao.createMoovieList(token.getUserId(), "Watched", MoovieListTypes.MOOVIE_LIST_TYPE_DEFAULT_PRIVATE.getType(), "");
+        moovieListDao.createMoovieList(token.getUserId(), "Watchlist", MoovieListTypes.MOOVIE_LIST_TYPE_DEFAULT_PRIVATE.getType(), "");
 
         LOGGER.info("Succesfuly confirmed user with userid: {}", token.getUserId());
         return isValidToken;
     }
-
 
 
     //FIND USERS
@@ -138,14 +142,14 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public User findUserByUsername(String username) {
+    public User findUserByUsername(String username) throws UnableToFindUserException {
         return userDao.findUserByUsername(username).orElseThrow(() -> new UnableToFindUserException("User with username: " + username + " not found"));
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<Profile> searchUsers(String username, String orderBy, String sortOrder, int size, int pageNumber) {
-        return userDao.searchUsers(username, setOrderBy(orderBy) , setSortOrder(sortOrder) , size, pageNumber);
+        return userDao.searchUsers(username, setOrderBy(orderBy), setSortOrder(sortOrder), size, pageNumber - 1);
     }
 
     @Transactional(readOnly = true)
@@ -175,36 +179,57 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public List<Profile> getMilkyPointsLeaders(int size, int pageNumber) {
-        return userDao.getMilkyPointsLeaders(size,pageNumber);
+        return userDao.getMilkyPointsLeaders(size, pageNumber - 1);
     }
 
     //AUTHENTICATION INFO
 
     @Override
     public User getInfoOfMyUser() {
-        if(SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof org.springframework.security.core.userdetails.User) {
-            org.springframework.security.core.userdetails.User userDetails = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            return findUserByUsername(userDetails.getUsername());
+        SecurityContext context = SecurityContextHolder.getContext();
+        if (context == null) {
+            throw new UserNotLoggedException("Security context is null");
+        }
+
+        Authentication authentication = context.getAuthentication();
+        if (authentication == null) {
+            throw new UserNotLoggedException("User is not authenticated");
+        }
+
+        Object principal = authentication.getPrincipal();
+        String username;
+
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else if (principal instanceof String) {
+            username = (String) principal;
         } else {
-            throw new UserNotLoggedException("User is not logged when its supposed");
+            throw new UserNotLoggedException("Unknown principal type");
+        }
+
+        // Fetch and return the user by username
+        try {
+            return findUserByUsername(username);
+        } catch (UnableToFindUserException e) {
+            throw new UserNotLoggedException("User not found");
         }
     }
 
     @Override
     public int tryToGetCurrentUserId() {
-        try{
+        try {
             return getInfoOfMyUser().getUserId();
-        } catch(UserNotLoggedException e){
+        } catch (UserNotLoggedException | UnableToFindUserException e) {
             return -1;
         }
     }
 
     @Override
     public boolean isUsernameMe(String username) {
-        if( getInfoOfMyUser().getUsername().equals(username)  ){
+        if (getInfoOfMyUser().getUsername().equals(username)) {
             return true;
         }
-        return false;
+        throw new InvalidAccessToResourceException("Username provided doesnt match with current user.");
     }
 
 
@@ -213,27 +238,25 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public void setProfilePicture(MultipartFile picture) {
+    public void setProfilePicture(byte[] image, String extension) {
         int uid = getInfoOfMyUser().getUserId();
 
-        if(!picture.isEmpty()){
-            if (!(picture.getContentType() != null && picture.getContentType().startsWith("image/"))) {
+        if (image.length > 0) {
+            if(image.length > MAX_IMAGE_SIZE){
+                throw new InvalidTypeException("File is too big (Max is 5MB).");
+            }
+
+            if (extension != null || extension.equals("png") || extension.equals("jpg")
+                    || extension.equals("jpeg") || extension.equals("gif")) {
+            if (userDao.hasProfilePicture(uid)) {
+                userDao.updateProfilePicture(getInfoOfMyUser().getUserId(), image);
+                return;
+            }
+            userDao.setProfilePicture(getInfoOfMyUser().getUserId(), image);
+            } else{
                 throw new InvalidTypeException("File is not of type image");
             }
-            try {
-                byte[] image = IOUtils.toByteArray(picture.getInputStream());
-                if(userDao.hasProfilePicture(uid)){
-                    userDao.updateProfilePicture( getInfoOfMyUser().getUserId() , image);
-                    LOGGER.info("Succesfully set the profile picture for user with userid : {} ", uid);
-                    return;
-                }
-                LOGGER.info("Succesfully set the profile picture for user with userid : {} ", uid);
-                userDao.setProfilePicture( getInfoOfMyUser().getUserId() , image);
-            }
-            catch (IOException e){
-                throw new FailedToSetProfilePictureException("The upload of the profile picture failed");
-            }
-        }else{
+        } else {
             throw new NoFileException("No file was selected");
         }
     }
@@ -253,32 +276,32 @@ public class UserServiceImpl implements UserService {
         emailService.sendVerificationEmail(toRenewTokenUser, token.getToken(), LocaleContextHolder.getLocale());
     }
 
-    private String setSortOrder(String sortOrder){
-        if(sortOrder==null || sortOrder.isEmpty()){
-            return null;
+    private String setSortOrder(String sortOrder) {
+        if (sortOrder == null || sortOrder.isEmpty()) {
+            return "desc";
         }
-        sortOrder = sortOrder.replaceAll(" ","");
-        if(sortOrder.toLowerCase().equals("asc")){
+        sortOrder = sortOrder.replaceAll(" ", "");
+        if (sortOrder.toLowerCase().equals("asc")) {
             return "asc";
         }
-        if(sortOrder.toLowerCase().equals("desc")){
+        if (sortOrder.toLowerCase().equals("desc")) {
             return "desc";
         }
         return null;
     }
 
-    private String setOrderBy(String orderBy){
-        if(orderBy==null || orderBy.isEmpty()){
-            return null;
-        }
-        orderBy = orderBy.replaceAll(" ","");
-        if(orderBy.toLowerCase().equals("milkypoints")){
+    private String setOrderBy(String orderBy) {
+        if (orderBy == null || orderBy.isEmpty()) {
             return "milkyPoints";
         }
-        if(orderBy.toLowerCase().equals("userid")){
+        orderBy = orderBy.replaceAll(" ", "");
+        if (orderBy.toLowerCase().equals("milkypoints")) {
+            return "milkyPoints";
+        }
+        if (orderBy.toLowerCase().equals("userid")) {
             return "userId";
         }
-        if(orderBy.toLowerCase().equals("username")){
+        if (orderBy.toLowerCase().equals("username")) {
             return "username";
         }
         return null;

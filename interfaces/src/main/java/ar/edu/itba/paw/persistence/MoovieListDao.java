@@ -27,7 +27,7 @@ public interface MoovieListDao {
     List<Media> getRecommendedMediaToAdd(int moovieListId, int size);
 
     List<MoovieListCard> getMoovieListCards(String search, String ownerUsername , int type , String orderBy, String order, int size, int pageNumber, int currentUserId);
-    int getMoovieListCardsCount(String search, String ownerUsername , int type , int size, int pageNumber);
+    int getMoovieListCardsCount(String search, String ownerUsername , int type);
 
     List<Media> getMoovieListContent(int moovieListId, int userid, String orderBy, String sortOrder, int size, int pageNumber);
 
@@ -44,6 +44,8 @@ public interface MoovieListDao {
     MoovieList insertMediaIntoMoovieList(int moovieListid, List<Integer> mediaIdList);
     void deleteMediaFromMoovieList(int moovieListId, int mediaId);
     void deleteMoovieList(int moovieListId);
+    void editMoovieList(int moovieListId, String name, String description);
+    boolean isMediaInMoovieList(int mediaId, int moovieListId);
 
 
     void removeLikeMoovieList(int userId, int moovieListId);

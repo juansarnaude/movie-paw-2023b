@@ -20,6 +20,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+import java.sql.PreparedStatement;
 import java.util.*;
 
 @Primary
@@ -249,7 +250,7 @@ public class MoovieListHibernateDao implements MoovieListDao{
     }
 
     @Override
-    public int getMoovieListCardsCount(String search, String ownerUsername, int type, int size, int pageNumber) {
+    public int getMoovieListCardsCount(String search, String ownerUsername, int type) {
         String jpql = "SELECT COUNT(mlc) " +
                 "FROM MoovieListCard mlc "
                 +"WHERE mlc.type = :type ";
@@ -293,6 +294,17 @@ public class MoovieListHibernateDao implements MoovieListDao{
                 "FROM MoovieListContent mlc LEFT JOIN Media m ON mlc.mediaId = m.mediaId " +
                 "WHERE mlc.moovieList.moovieListId = :moovieListId " +
                 "ORDER BY ";
+
+        /*
+            TODO DONT KNOW IF THIS IS CORRECT
+         */
+        if (orderBy==null) {
+            orderBy = "customOrder";
+        }
+        if (sortOrder==null) {
+            sortOrder = "DESC";
+        }
+
 
         if(orderBy.equals("customOrder")){
             jpql += " mlc." + orderBy + " " + sortOrder;
@@ -402,6 +414,37 @@ public class MoovieListHibernateDao implements MoovieListDao{
         }
 
     }
+
+    @Override
+    public void editMoovieList(int listId, String newName, String newDescription) {
+        try {
+            MoovieList moovieList = em.find(MoovieList.class, listId);
+
+            moovieList.setName(newName);
+            moovieList.setDescription(newDescription);
+            em.merge(moovieList);
+        } catch (DuplicateKeyException e) {
+            throw new UnableToInsertIntoDatabase("You already have a MoovieList with name: " + newName);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to edit MoovieList.");
+        }
+    }
+
+    @Override
+    public boolean isMediaInMoovieList(int mediaId, int moovieListId) {
+        String query = "SELECT 1 FROM moovielistscontent WHERE mediaid = ? AND moovielistid = ? LIMIT 1";
+
+        try {
+            Query q1 = em.createNativeQuery(query)
+                    .setParameter(1, mediaId)
+                    .setParameter(2, moovieListId);
+
+            return !q1.getResultList().isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 
 
     @Override

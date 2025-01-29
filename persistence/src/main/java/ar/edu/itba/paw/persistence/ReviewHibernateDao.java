@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.exceptions.MoovieListNotFoundException;
+import ar.edu.itba.paw.exceptions.ReviewNotFoundException;
 import ar.edu.itba.paw.exceptions.UnableToInsertIntoDatabase;
 import ar.edu.itba.paw.models.Review.MoovieListReview;
 import ar.edu.itba.paw.models.Review.Review;
@@ -11,10 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
+import javax.persistence.*;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +28,7 @@ public class ReviewHibernateDao implements ReviewDao {
 
     @Override
     public Optional<Review> getReviewById(int currentUserId, int reviewId) {
-        Review review = Optional.ofNullable(em.find(Review.class, reviewId)).orElseThrow(() -> new MoovieListNotFoundException("Review by id: " + reviewId + " not found"));
+        Review review = Optional.ofNullable(em.find(Review.class, reviewId)).orElseThrow(() -> new ReviewNotFoundException("Review by id: " + reviewId + " not found"));
 
         String sqlQuery = "SELECT CASE WHEN EXISTS (SELECT 1 FROM reviewslikes rl WHERE rl.reviewid= :reviewId  AND rl.userid = :userId) THEN true ELSE false END";
         Query query = em.createNativeQuery(sqlQuery);
@@ -210,17 +208,26 @@ public class ReviewHibernateDao implements ReviewDao {
     }
 
     @Override
-    public Review getReviewByMediaIdAndUsername(int mediaId, int userId, ReviewTypes type){
-        if(type.getType() == ReviewTypes.REVIEW_MEDIA.getType()) {
+    public Review getReviewByMediaIdAndUsername(int mediaId, int userId){
+        try{
             return em.createQuery("SELECT r FROM Review r WHERE r.user.userId = :userId AND r.mediaId = :mediaId", Review.class)
                     .setParameter("userId", userId)
                     .setParameter("mediaId", mediaId)
                     .getSingleResult();
-        }else{
-            return em.createQuery("SELECT r FROM MoovieListReview r WHERE r.user.userId = :userId AND r.moovieListId = :mediaId", Review.class)
-                    .setParameter("userId", userId)
-                    .setParameter("mediaId", mediaId)
-                    .getSingleResult();
+        }catch(NoResultException e){
+            return null;
+        }
     }
+
+    @Override
+    public MoovieListReview getMoovieListReviewByListIdAndUsername(int listId, int userId){
+        try{
+                return em.createQuery("SELECT r FROM MoovieListReview r WHERE r.user.userId = :userId AND r.moovieListId = :listId", MoovieListReview.class)
+                        .setParameter("userId", userId)
+                        .setParameter("listId", listId)
+                        .getSingleResult();
+            }catch(NoResultException e){
+            return null;
+        }
     }
 }

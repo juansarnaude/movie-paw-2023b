@@ -20,7 +20,7 @@ import java.util.List;
 
 @Primary
 @Repository
-public class ReportDaoImpl implements ReportDao{
+public class ReportDaoImpl implements ReportDao {
 
     @PersistenceContext
     private EntityManager em;
@@ -81,11 +81,12 @@ public class ReportDaoImpl implements ReportDao{
     }
 
     @Override
-    public void reportReview(int reviewId, int userId, int type, String content) {
-        Review review= em.find(Review.class, reviewId);
+    public ReviewReport reportReview(int reviewId, int userId, int type, String content) {
+        Review review = em.find(Review.class, reviewId);
         User user = em.find(User.class, userId);
-        ReviewReport report = new ReviewReport(type,content, user, review);
+        ReviewReport report = new ReviewReport(type, content, user, review);
         em.persist(report);
+        return report;
     }
 
     @Override
@@ -95,7 +96,7 @@ public class ReportDaoImpl implements ReportDao{
                 .setParameter("reviewId", reviewId)
                 .getResultList();
 
-        for( ReviewReport report : toRemove ){
+        for (ReviewReport report : toRemove) {
             em.remove(report);
         }
     }
@@ -130,11 +131,12 @@ public class ReportDaoImpl implements ReportDao{
     }
 
     @Override
-    public void reportMoovieListReview(int moovieListReviewId, int userId, int type, String content) {
-        MoovieListReview review= em.find(MoovieListReview.class, moovieListReviewId);
+    public MoovieListReviewReport reportMoovieListReview(int moovieListReviewId, int userId, int type, String content) {
+        MoovieListReview review = em.find(MoovieListReview.class, moovieListReviewId);
         User user = em.find(User.class, userId);
-        MoovieListReviewReport report = new MoovieListReviewReport(type,content, user, review);
+        MoovieListReviewReport report = new MoovieListReviewReport(type, content, user, review);
         em.persist(report);
+        return report;
     }
 
     @Override
@@ -144,7 +146,7 @@ public class ReportDaoImpl implements ReportDao{
                 .setParameter("moovieListReviewId", moovieListReviewId)
                 .getResultList();
 
-        for( MoovieListReviewReport report : toRemove ){
+        for (MoovieListReviewReport report : toRemove) {
             em.remove(report);
         }
     }
@@ -179,12 +181,13 @@ public class ReportDaoImpl implements ReportDao{
     }
 
     @Override
-    public void reportMoovieList(int moovieListId, int userId, int type, String content) {
+    public MoovieListReport reportMoovieList(int moovieListId, int userId, int type, String content) {
 
-        MoovieList moovieList=em.find(MoovieList.class, moovieListId);
+        MoovieList moovieList = em.find(MoovieList.class, moovieListId);
         User user = em.find(User.class, userId);
-        MoovieListReport report = new MoovieListReport(type,content, user, moovieList);
+        MoovieListReport report = new MoovieListReport(type, content, user, moovieList);
         em.persist(report);
+        return report;
     }
 
     @Override
@@ -194,7 +197,7 @@ public class ReportDaoImpl implements ReportDao{
                 .setParameter("moovieListId", moovieListId)
                 .getResultList();
 
-        for( MoovieListReport report : toRemove ){
+        for (MoovieListReport report : toRemove) {
             em.remove(report);
         }
     }
@@ -229,11 +232,12 @@ public class ReportDaoImpl implements ReportDao{
     }
 
     @Override
-    public void reportComment(int commentId, int userId, int type, String content) {
-        Comment comment= em.find(Comment.class, commentId);
+    public CommentReport reportComment(int commentId, int userId, int type, String content) {
+        Comment comment = em.find(Comment.class, commentId);
         User user = em.find(User.class, userId);
-        CommentReport report = new CommentReport(type,content, user, comment);
+        CommentReport report = new CommentReport(type, content, user, comment);
         em.persist(report);
+        return report;
     }
 
     @Override
@@ -243,7 +247,7 @@ public class ReportDaoImpl implements ReportDao{
                 .setParameter("commentId", commentId)
                 .getResultList();
 
-        for( CommentReport report : toRemove ){
+        for (CommentReport report : toRemove) {
             em.remove(report);
         }
     }

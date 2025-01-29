@@ -2,10 +2,7 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.Comments.Comment;
 import ar.edu.itba.paw.models.MoovieList.MoovieList;
-import ar.edu.itba.paw.models.Reports.CommentReport;
-import ar.edu.itba.paw.models.Reports.MoovieListReport;
-import ar.edu.itba.paw.models.Reports.MoovieListReviewReport;
-import ar.edu.itba.paw.models.Reports.ReviewReport;
+import ar.edu.itba.paw.models.Reports.*;
 import ar.edu.itba.paw.models.Review.MoovieListReview;
 import ar.edu.itba.paw.models.Review.Review;
 import ar.edu.itba.paw.persistence.ReportDao;
@@ -15,10 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class ReportServiceImpl implements ReportService{
+public class ReportServiceImpl implements ReportService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReportServiceImpl.class);
 
@@ -35,6 +33,41 @@ public class ReportServiceImpl implements ReportService{
     @Override
     public int getTypeReports(int type) {
         return reportDao.getTypeReports(type);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<Object> getReports(String contentType) {
+        List<Object> reports = new ArrayList<>();
+
+        if (contentType == null || contentType.isEmpty()) {
+            // If no content type specified, fetch all reports
+            reports.addAll(reportDao.getCommentReports());
+            reports.addAll(reportDao.getReviewReports());
+            reports.addAll(reportDao.getMoovieListReports());
+            reports.addAll(reportDao.getMoovieListReviewReports());
+        } else {
+            // Fetch reports based on the specified content type
+            switch (contentType.toLowerCase()) {
+                case "comment":
+                    reports.addAll(reportDao.getCommentReports());
+                    break;
+                case "review":
+                    reports.addAll(reportDao.getReviewReports());
+                    break;
+                case "list":
+                    reports.addAll(reportDao.getMoovieListReports());
+                    break;
+                case "listreview":
+                    reports.addAll(reportDao.getMoovieListReviewReports());
+                    break;
+                default:
+                    // Return empty list for invalid content types
+                    break;
+            }
+        }
+
+        return reports;
     }
 
     @Transactional(readOnly = true)
@@ -59,16 +92,16 @@ public class ReportServiceImpl implements ReportService{
 
     @Transactional
     @Override
-    public void reportReview(int reviewId, int userId, int type, String content) {
+    public ReviewReport reportReview(int reviewId, int userId, int type, String content) {
         LOGGER.info("reportReview insert");
-        reportDao.reportReview(reviewId, userId, type, content);
+        return reportDao.reportReview(reviewId, userId, type, content);
     }
 
     @Transactional
     @Override
-    public void resolveReviewReport(int reportId) {
+    public void resolveReviewReport(int reviewId) {
 
-        reportDao.resolveReviewReport(reportId);
+        reportDao.resolveReviewReport(reviewId);
     }
 
     @Transactional(readOnly = true)
@@ -93,15 +126,15 @@ public class ReportServiceImpl implements ReportService{
 
     @Transactional
     @Override
-    public void reportMoovieListReview(int moovieListReviewId, int userId, int type, String content) {
-        reportDao.reportMoovieListReview(moovieListReviewId, userId, type, content);
+    public MoovieListReviewReport reportMoovieListReview(int moovieListReviewId, int userId, int type, String content) {
+        return reportDao.reportMoovieListReview(moovieListReviewId, userId, type, content);
     }
 
     @Transactional
     @Override
-    public void resolveMoovieListReviewReport(int reportId) {
+    public void resolveMoovieListReviewReport(int mlrId) {
 
-        reportDao.resolveMoovieListReviewReport(reportId);
+        reportDao.resolveMoovieListReviewReport(mlrId);
     }
 
     @Transactional(readOnly = true)
@@ -125,15 +158,15 @@ public class ReportServiceImpl implements ReportService{
 
     @Transactional
     @Override
-    public void reportMoovieList(int moovieListId, int userId, int type, String content) {
-        reportDao.reportMoovieList(moovieListId, userId, type, content);
+    public MoovieListReport reportMoovieList(int moovieListId, int userId, int type, String content) {
+        return reportDao.reportMoovieList(moovieListId, userId, type, content);
     }
 
     @Transactional
     @Override
-    public void resolveMoovieListReport(int reportId) {
+    public void resolveMoovieListReport(int mlId) {
 
-        reportDao.resolveMoovieListReport(reportId);
+        reportDao.resolveMoovieListReport(mlId);
     }
 
     @Transactional(readOnly = true)
@@ -156,14 +189,14 @@ public class ReportServiceImpl implements ReportService{
 
     @Transactional
     @Override
-    public void reportComment(int commentId, int userId, int type, String content) {
-        reportDao.reportComment(commentId, userId, type, content);
+    public CommentReport reportComment(int commentId, int userId, int type, String content) {
+        return reportDao.reportComment(commentId, userId, type, content);
     }
 
     @Transactional
     @Override
-    public void resolveCommentReport(int reportId) {
+    public void resolveCommentReport(int commentId) {
 
-        reportDao.resolveCommentReport(reportId);
+        reportDao.resolveCommentReport(commentId);
     }
 }
