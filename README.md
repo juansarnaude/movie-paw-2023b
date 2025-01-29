@@ -1,7 +1,10 @@
 # Proyecto de Aplicación Web - Moovie
-Este repositorio contiene el codigo fuente y los recursos
-necesarios para desarollar y desplegar una aplicación web utilizando
-Java 8 y la metodologia Scrum
+Aplicacion web de una plataforma para aficionados al cine, donde los usuarios pueden crear reseñas,
+listas, seguir a otros, dar ”me gusta” y mas. 
+
+El proyecto esta en desarrollo y la version final deberia estar disponible a finales de febrero.
+
+Este repositorio contiene el codigo fuente y los recursos necesarios para desarollar y desplegar una aplicación web utilizando Java 8, PostgreSQL, Hybernate, Spring, React.
 
 # Integrantes
 - Juan Segundo Arnaude - Legajo: 62184
